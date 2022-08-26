@@ -7,8 +7,8 @@ use Mpdf\Config\FontVariables;
 use Mpdf\Conversion;
 use Mpdf\Css\Border;
 use Mpdf\Css\TextVars;
-use Mpdf\Log\Context as LogContext;
 use Mpdf\Fonts\MetricsGenerator;
+use Mpdf\Log\Context as LogContext;
 use Mpdf\Output\Destination;
 use Mpdf\QrCode;
 use Mpdf\Utils\Arrays;
@@ -1041,7 +1041,23 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 	 */
 	private $container;
 
-	/**
+    // ITS4YOU-START
+    //PDFMaker customized variables
+    public $PDFMakerRecord;
+    public $PDFMakerTemplateid;
+    public $PDFMakerSubtotalAble;
+    public $PDFMakerSubtotalsArray;
+    public $PDFMakerDispHeader;
+    public $PDFMakerDispFooter;
+    public $PDFMakerSplitCounter = 0;
+    public $progressBar;
+    public $progbar_heading;
+    public $progbar_altHTML;
+    public $useGraphs;
+    public $showStats;
+    // ITS4YOU-END
+
+    /**
 	 * @param mixed[] $config
 	 * @param \Mpdf\Container\ContainerInterface|null $container Experimental container to override internal services
 	 */
@@ -2050,9 +2066,16 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 		$this->EndLayer();
 
 		if (!$this->tableOfContents->TOCmark) { // Page footer
-			$this->InFooter = true;
-			$this->Footer();
-			$this->InFooter = false;
+            // ITS4YOU-START
+            //$this->InFooter=true;
+            //$this->Footer();
+            //$this->InFooter=false;
+            if ($this->PDFMakerDispFooter["df_last"] !== false || ($this->page == 1 && $this->PDFMakerDispFooter["df_first"] !== false)) {
+                $this->InFooter = true;
+                $this->Footer();
+                $this->InFooter = false;
+            }
+            // ITS4YOU-END
 		}
 
 		if ($this->tableOfContents->TOCmark || count($this->tableOfContents->m_TOC)) {
@@ -3189,13 +3212,36 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 		$tc = $this->TextColor;
 		$cf = $this->ColorFlag;
 		if ($this->page > 0) {
-			// Page footer
-			$this->InFooter = true;
+            // ITS4YOU-START
+            //Page footer
+            //$this->InFooter=true;
 
-			$this->Reset();
-			$this->pageoutput[$this->page] = [];
+            //$this->Reset();
+            //$this->pageoutput[$this->page] = array();
 
-			$this->Footer();
+            //$this->Footer();
+            if ($this->page == 1) {
+                if ($this->PDFMakerDispFooter['df_first'] !== false) {
+                    //Page footer
+                    $this->InFooter = true;
+
+                    $this->Reset();
+                    $this->pageoutput[$this->page] = array();
+
+                    $this->Footer();
+                }
+            } else {
+                if ($this->PDFMakerDispFooter['df_other'] !== false) {
+                    //Page footer
+                    $this->InFooter = true;
+
+                    $this->Reset();
+                    $this->pageoutput[$this->page] = array();
+
+                    $this->Footer();
+                }
+            }
+            // ITS4YOU-END
 			// Close page
 			$this->_endpage();
 		}
@@ -3264,7 +3310,18 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 		$this->ColorFlag = $cf;
 
 		// Page header
-		$this->Header();
+        // ITS4YOU-START
+        //$this->Header();
+        if ($this->page == 1) {
+            if ($this->PDFMakerDispHeader['dh_first'] !== false) {
+                $this->Header();
+            }
+        } else {
+            if ($this->PDFMakerDispHeader['dh_other'] !== false) {
+                $this->Header();
+            }
+        }
+        // ITS4YOU-END
 
 		// Restore line width
 		if ($this->LineWidth != $lw) {
@@ -10454,7 +10511,22 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 			else {
 				$h = 0;
 			}
-			$this->tMargin = $this->margin_header + $h + $this->orig_tMargin;
+            //ITS4YOU-START
+			//$this->tMargin = $this->margin_header + $h + $this->orig_tMargin;
+            if ($this->page == 1) {
+                if ($this->PDFMakerDispHeader["dh_first"] !== false) {
+                    $this->tMargin = $this->margin_header + $h + $this->orig_tMargin;
+                } else {
+                    $this->tMargin = $this->margin_header;
+                }
+            } else {
+                if ($this->PDFMakerDispHeader["dh_other"] !== false) {
+                    $this->tMargin = $this->margin_header + $h + $this->orig_tMargin;
+                } else {
+                    $this->tMargin = $this->margin_header;
+                }
+            }
+            //ITS4YOU-END
 		} elseif ($this->setAutoTopMargin == 'stretch') {
 			if (isset($htmlh['h']) && $htmlh['h']) {
 				$h = $htmlh['h'];
@@ -10462,7 +10534,22 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 			else {
 				$h = 0;
 			}
-			$this->tMargin = max($this->orig_tMargin, $this->margin_header + $h + $this->autoMarginPadding);
+            //ITS4You-END
+			//$this->tMargin = max($this->orig_tMargin, $this->margin_header + $h + $this->autoMarginPadding);
+            if ($this->page == 1) {
+                if ($this->PDFMakerDispHeader["dh_first"] !== false) {
+                    $this->tMargin = max($this->orig_tMargin, $this->margin_header + $h + $this->autoMarginPadding);
+                } else {
+                    $this->tMargin = max($this->orig_tMargin, $this->margin_header + $h + $this->autoMarginPadding);
+                }
+            } else {
+                if ($this->PDFMakerDispHeader["dh_other"] !== false) {
+                    $this->tMargin = max($this->orig_tMargin, $h + $this->autoMarginPadding);
+                } else {
+                    $this->tMargin = max($this->orig_tMargin, $h + $this->autoMarginPadding);
+                }
+            }
+            //ITS4YOU-END
 		}
 	}
 
@@ -10481,7 +10568,22 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 			else {
 				$h = 0;
 			}
-			$this->bMargin = $this->margin_footer + $h + $this->orig_bMargin;
+            // ITS4YOU-START
+			//$this->bMargin = $this->margin_footer + $h + $this->orig_bMargin;
+            if ($this->page == 1) {
+                if ($this->PDFMakerDispFooter["df_first"] !== false) {
+                    $this->bMargin = $this->margin_footer + $h + $this->orig_bMargin;
+                } else {
+                    $this->bMargin = $this->margin_footer;
+                }
+            } else {
+                if ($this->PDFMakerDispFooter["df_other"] !== false) {
+                    $this->bMargin = $this->margin_footer + $h + $this->orig_bMargin;
+                } else {
+                    $this->bMargin = $this->margin_footer;
+                }
+            }
+            // ITS4YOU-END
 			$this->PageBreakTrigger = $this->h - $this->bMargin;
 		} elseif ($this->setAutoBottomMargin == 'stretch') {
 			if (isset($htmlf['h']) && $htmlf['h']) {
@@ -10490,7 +10592,22 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 			else {
 				$h = 0;
 			}
-			$this->bMargin = max($this->orig_bMargin, $this->margin_footer + $h + $this->autoMarginPadding);
+            // ITS4YOU-START
+			//$this->bMargin = max($this->orig_bMargin, $this->margin_footer + $h + $this->autoMarginPadding);
+            if ($this->page == 1) {
+                if ($this->PDFMakerDispFooter["df_first"] !== false) {
+                    $this->bMargin = max($this->orig_bMargin, $this->margin_footer + $h + $this->autoMarginPadding);
+                } else {
+                    $this->bMargin = $this->margin_footer;
+                }
+            } else {
+                if ($this->PDFMakerDispFooter["df_other"] !== false) {
+                    $this->bMargin = max($this->orig_bMargin, $this->margin_footer + $h + $this->autoMarginPadding);
+                } else {
+                    $this->bMargin = $this->margin_footer;
+                }
+            }
+            // ITS4YOU-END
 			$this->PageBreakTrigger = $this->h - $this->bMargin;
 		}
 	}
@@ -11804,6 +11921,33 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 	}
 
 	/* -- TABLES -- */
+    // This function determines the shrink factor when resizing tables
+    // val is the table_height / page_height_available
+    // returns a scaling factor used as $shrin_k to resize the table
+    // Overcompensating will be quicker but may unnecessarily shrink table too much
+    // Undercompensating means it will reiterate more times (taking more processing time)
+
+    function PDFGetToChangeArray($copyTF, $replacements)
+    {
+        $pdf_toChangeArr = array();
+
+        foreach ($copyTF as $pdf_rows_key => $pdf_rows) {
+            foreach ($pdf_rows as $pdf_cells_key => $pdf_cells) {
+                foreach ($pdf_cells['textbuffer'] as $pdf_buff_key => $pdf_buff) {
+                    // Checking whether the textbuffer contains direct text or reference to nested table
+                    if (strpos($pdf_buff[0], "\xbb\xa4\xac") === false) {
+                        $tmp_buff = str_replace(array_keys($replacements), $replacements, $pdf_buff[0]);
+                        $pdf_toChangeArr[$pdf_rows_key . "#@#" . $pdf_cells_key . "#@#" . $pdf_buff_key] = $tmp_buff;
+                    }
+                }
+            }
+        }
+
+        return $pdf_toChangeArr;
+    }
+
+    /* -- END TABLES -- */
+
 	function TableHeaderFooter($content = '', $tablestartpage = '', $tablestartcolumn = '', $horf = 'H', $level = 0, $firstSpread = true, $finalSpread = true)
 	{
 		if (($horf == 'H' || $horf == 'F') && !empty($content)) { // mPDF 5.7.2
@@ -22192,6 +22336,18 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 						$extra = $table['max_cell_border_width']['B'] / 2;
 					}
 
+                    //ITS4YOU-START subtotal for last row of table starts
+                    if ($this->PDFMakerSubtotalAble == true && count($this->PDFMakerSubtotalsArray) > 0 && $j == $startcol && !empty($tablefooter) && isset($tablefooter[$i])) {
+                        $lastReplacements = array();
+                        $lastReplacements = end($this->PDFMakerSubtotalsArray);
+                        $pdf_toChangeArr = $this->PDFGetToChangeArray($tablefooter, $lastReplacements);
+                        foreach ($pdf_toChangeArr as $path => $val) {
+                            list($pdf_rows_key, $pdf_cells_key, $pdf_buff_key) = explode('#@#', $path, 3);
+                            $cells[$pdf_rows_key][$pdf_cells_key]['textbuffer'][$pdf_buff_key][0] = $val;
+                        }
+                    }
+                    //ITS4YOU-END subtotal for last row of table
+
 					if ($j == $startcol && ((($y + $maxrowheight + $extra ) > ($pagetrigger + 0.001)) || (($this->keepColumns || !$this->ColActive) && !empty($tablefooter) && ($y + $maxrowheight + $tablefooterrowheight + $extra) > $pagetrigger) && ($this->tableLevel == 1 && $i < ($numrows - $table['headernrows']))) && ($y0 > 0 || $x0 > 0) && !$this->InFooter && $this->autoPageBreak) {
 						if (!$skippage) {
 							$finalSpread = true;
@@ -22212,7 +22368,31 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 							if (($this->keepColumns || !$this->ColActive) && !empty($tablefooter) && $i > 0) {
 								$this->y = $y;
 								$ya = $this->y;
-								$this->TableHeaderFooter($tablefooter, $tablestartpage, $tablestartcolumn, 'F', $level, $firstSpread, $finalSpread);
+                                //ITS4YOU-START
+								//$this->TableHeaderFooter($tablefooter, $tablestartpage, $tablestartcolumn, 'F', $level, $firstSpread, $finalSpread);
+                                if ($this->PDFMakerSubtotalAble == true && count($this->PDFMakerSubtotalsArray) > 0) {
+                                    $preceedingIdx = ($i - $table['headernrows'] - $this->PDFMakerSplitCounter);
+
+                                    $replacements = array();
+
+                                    if (isset($this->PDFMakerSubtotalsArray[$preceedingIdx])) {
+                                        $replacements = $this->PDFMakerSubtotalsArray[$preceedingIdx];
+                                    }
+
+                                    $copyTF = $tablefooter;
+                                    $pdf_toChangeArr = $this->PDFGetToChangeArray($copyTF, $replacements);
+
+                                    foreach ($pdf_toChangeArr as $path => $val) {
+                                        list($pdf_rows_key, $pdf_cells_key, $pdf_buff_key) = explode("#@#", $path, 3);
+                                        $copyTF[$pdf_rows_key][$pdf_cells_key]['textbuffer'][$pdf_buff_key][0] = $val;
+                                    }
+
+                                    $this->TableHeaderFooter($copyTF, $tablestartpage, $tablestartcolumn, 'F', $level, $firstSpread, $finalSpread);
+                                } else {
+                                    $this->TableHeaderFooter($tablefooter, $tablestartpage, $tablestartcolumn, 'F', $level, $firstSpread, $finalSpread);
+                                }
+                                //ITS4YOU-END
+
 								if ($this->table_rotate) {
 									$this->tbrot_h += $this->y - $ya;
 								}
@@ -22224,6 +22404,9 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 							$oldcolumn = $this->CurrCol;
 							if ($this->AcceptPageBreak()) {
 								$newpagestarted = true;
+                                // ITS4YOU-START
+                                $this->PDFMakerSplitCounter++;
+                                // ITS4YOU-END
 								$this->y = $y + $y0;
 
 								// Move down to account for border-spacing or
